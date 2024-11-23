@@ -1,0 +1,142 @@
+#include <stdio.h>      // Mengimpor pustaka standar input/output
+#include <stdlib.h>     // Mengimpor pustaka standar untuk fungsi umum
+#include <limits.h>     // Mengimpor pustaka untuk konstanta batas integer
+
+#define MAX_NODES 7    // Mendefinisikan jumlah maksimum node dalam graf
+#define INF INT_MAX    // Mendefinisikan nilai tak terhingga sebagai batas maksimum integer
+
+// Struktur untuk menyimpan informasi tentang tepi
+typedef struct {
+    int cost;          // Biaya tepi
+    char node1;       // Node awal
+    char node2;       // Node tujuan
+} Edge;
+
+// Struktur untuk menyimpan informasi tentang node dan tepi yang terhubung
+typedef struct {
+    char name;        // Nama node
+    Edge edges[MAX_NODES];  // Array untuk menyimpan tepi yang terhubung ke node ini
+    int edge_count;   // Jumlah tepi yang terhubung ke node ini
+} Node;
+
+Node graph[MAX_NODES];  // Array global untuk menyimpan graf
+int node_count = 0;      // Variabel untuk menghitung jumlah node dalam graf
+
+// Fungsi untuk menambahkan tepi ke dalam graf
+void add_edge(char from, char to, int cost) {
+    for (int i = 0; i < node_count; i++) {  // Iterasi melalui semua node yang ada
+        if (graph[i].name == from) {         // Mencari node asal (from)
+            graph[i].edges[graph[i].edge_count++] = (Edge){cost, from, to};  // Menambahkan tepi baru
+            return;                          // Keluar dari fungsi setelah menambahkan tepi
+        }
+    }
+}
+
+// Fungsi untuk membuat graf dengan menambahkan semua tepi yang diperlukan
+void make_graph() {
+    graph[node_count++] = (Node){'A', {}, 0};  // Menambahkan node A
+    graph[node_count++] = (Node){'B', {}, 0};  // Menambahkan node B
+    graph[node_count++] = (Node){'C', {}, 0};  // Menambahkan node C
+    graph[node_count++] = (Node){'D', {}, 0};  // Menambahkan node D
+    graph[node_count++] = (Node){'E', {}, 0};  // Menambahkan node E
+    graph[node_count++] = (Node){'F', {}, 0};  // Menambahkan node F
+    graph[node_count++] = (Node){'G', {}, 0};  // Menambahkan node G
+
+    // Menambahkan semua tepi dengan biaya yang sesuai
+    add_edge('A', 'D', 3);
+    add_edge('A', 'C', 3);
+    add_edge('A', 'B', 2);
+    add_edge('B', 'A', 2);
+    add_edge('B', 'C', 4);
+    add_edge('B', 'E', 3);
+    add_edge('C', 'A', 3);
+    add_edge('C', 'D', 5);
+    add_edge('C', 'F', 6);
+    add_edge('C', 'E', 1);
+    add_edge('C', 'B', 4);
+    add_edge('D', 'A', 3);
+    add_edge('D', 'C', 5);
+    add_edge('D', 'F', 7);
+    add_edge('E', 'F', 8);
+    add_edge('E', 'C', 1);
+    add_edge('E', 'B', 3);
+    add_edge('F', 'G', 9);
+    add_edge('F', 'E', 8);
+    add_edge('F', 'C', 6);
+    add_edge('F', 'D', 7);
+    add_edge('G', 'F', 9); 
+}
+
+// Fungsi untuk menemukan key minimum dari set vertex yang belum dikunjungi
+int find_min_key(int key[], int visited[]) {
+    int min = INF, min_index;   // Inisialisasi nilai minimum dan indeks minimum
+
+    for (int v = 0; v < node_count; v++) {   // Iterasi melalui semua vertex
+        if (!visited[v] && key[v] < min) {   // Jika vertex belum dikunjungi dan key-nya lebih kecil dari min
+            min = key[v];                     // Update nilai minimum
+            min_index = v;                    // Simpan indeks vertex dengan key minimum
+        }
+    }
+
+    return min_index;   // Kembalikan indeks vertex dengan key minimum
+}
+
+// Fungsi untuk menjalankan algoritma Prim dan menemukan MST
+void prims() {
+    int parent[MAX_NODES];   // Array untuk menyimpan parent dari setiap vertex dalam MST
+    int key[MAX_NODES];      // Array untuk menyimpan biaya minimum ke setiap vertex
+    int visited[MAX_NODES];   // Array untuk melacak vertex yang sudah dikunjungi
+
+    for (int i = 0; i < node_count; i++) {   // Inisialisasi semua array
+        key[i] = INF;                        // Set semua key ke tak terhingga
+        visited[i] = 0;                      // Set semua vertex sebagai belum dikunjungi
+        parent[i] = -1;                      // Set semua parent ke -1 (tidak ada parent)
+    }
+
+    key[0] = 0;         // Mulai dari vertex pertama (A), set key-nya ke nol
+    parent[0] = -1;     // Node A adalah root, jadi tidak memiliki parent
+
+    for (int count = 0; count < node_count - 1; count++) {   // Proses hingga semua vertex terkoneksi ke MST 
+        int u = find_min_key(key, visited);   // Temukan vertex dengan key minimum yang belum dikunjungi
+
+        visited[u] = 1;   // Tandai vertex tersebut sebagai sudah dikunjungi
+
+        for (int v = 0; v < graph[u].edge_count; v++) {   // Iterasi melalui semua tepi yang terhubung ke vertex u 
+            Edge edge = graph[u].edges[v];                // Ambil tepi saat ini
+            
+            int adj_node_index;                            // Variabel untuk menyimpan indeks dari vertex tujuan
+            
+            for (int j = 0; j < node_count; j++) {       // Mencari indeks dari vertex tujuan di array graph 
+                if (graph[j].name == edge.node2) {
+                    adj_node_index = j;
+                    break;
+                }
+            }
+
+            if (!visited[adj_node_index] && edge.cost < key[adj_node_index]) {   // Jika vertex tujuan belum dikunjungi dan biaya lebih kecil dari key saat ini 
+                parent[adj_node_index] = u;   // Set parent dari vertex tujuan ke u 
+                key[adj_node_index] = edge.cost;   // Update biaya minimum ke vertex tujuan 
+            }
+        }
+    }
+
+    printf("Minimum Spanning Tree:\n");   // Mencetak header hasil MST
+    
+    int total_cost = 0;                     // Variabel untuk menghitung total biaya MST
+    
+    for (int i = 1; i < node_count; i++) {   // Iterasi melalui semua vertex kecuali root 
+        printf("%c - %c: %d\n", graph[parent[i]].name, graph[i].name, key[i]);   // Mencetak hubungan antara parent dan anak serta biayanya 
+        total_cost += key[i];                 // Menjumlahkan biaya ke total_cost 
+    }
+
+    printf("Total cost: %d\n", total_cost);   // Mencetak total biaya MST 
+}
+
+// Fungsi utama program 
+int main() {
+    make_graph();      // Memanggil fungsi untuk membuat graf
+    
+    prims();          // Memanggil fungsi Prim untuk menemukan MST
+
+    return 0;         // Mengembalikan nilai nol sebagai tanda program selesai dengan sukses 
+}
